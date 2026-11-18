@@ -1,0 +1,17 @@
+
+<h2 class="es">Las 5 piezas clave</h2><h2 class="en">The 5 key pieces</h2>
+
+<div class="piece es"><b>1. La App raíz (una para web, otra para nativo).</b> {{C:src/App.web.tsx:80}} y {{C:src/App.tsx:168}}. Arman los "envoltorios" (estado, React Query, navegación, Sentry) donde vive todo lo demás. En web, el parámetro <code>?device=</code> decide para qué TV se ejecuta ({{C:src/App.web.tsx:125}}).</div>
+<div class="piece en"><b>1. The root App (one for web, one for native).</b> {{C:src/App.web.tsx:80}} and {{C:src/App.tsx:168}}. They build the "wrappers" (state, React Query, navigation, Sentry) that hold everything else. On web, the <code>?device=</code> query parameter decides which TV it runs for ({{C:src/App.web.tsx:125}}).</div>
+
+<div class="piece es"><b>2. Servicios y feature flags.</b> {{C:src/App.tsx:185}} y {{C:src/App.tsx:193}}. Al arrancar se enciende <code>FeatureService</code> (Flagsmith): prende o apaga funciones sin publicar una versión nueva. Hay valores de respaldo si no hay red (<code>src/constants/flagsmithFallbacks/</code>).</div>
+<div class="piece en"><b>2. Services and feature flags.</b> {{C:src/App.tsx:185}} and {{C:src/App.tsx:193}}. On startup <code>FeatureService</code> (Flagsmith) is turned on: it enables or disables features without shipping a new release. There are fallback values for when there is no network (<code>src/constants/flagsmithFallbacks/</code>).</div>
+
+<div class="piece es"><b>3. Los navegadores.</b> {{C:src/navigators/RootStackNavigator.tsx:91}} y {{C:src/navigators/SideBarNavigator.tsx:93}}. Deciden qué pantalla se ve; el menú lateral es el principal. Las pantallas se cargan solo cuando se necesitan (<code>React.lazy</code>).</div>
+<div class="piece en"><b>3. The navigators.</b> {{C:src/navigators/RootStackNavigator.tsx:91}} and {{C:src/navigators/SideBarNavigator.tsx:93}}. They decide which screen you see; the side menu is the main one. Screens are loaded only when needed (<code>React.lazy</code>).</div>
+
+<div class="piece es"><b>4. La capa de datos.</b> {{C:src/hooks/api/useFetchExperience.ts:61}} → {{C:src/nflApi/Experience.ts:32}} → {{P:nfl-api/src/axiosInstance.ts:159}}. Los hooks piden datos, la API agrega el token y el cliente HTTP reintenta una vez si el servidor responde 401.</div>
+<div class="piece en"><b>4. The data layer.</b> {{C:src/hooks/api/useFetchExperience.ts:61}} → {{C:src/nflApi/Experience.ts:32}} → {{P:nfl-api/src/axiosInstance.ts:159}}. Hooks ask for data, the API adds the token, and the HTTP client retries once if the server answers 401.</div>
+
+<div class="piece es"><b>5. El reproductor de video.</b> {{C:src/components/CTVVideo/CTVVideo.tsx:91}}. Envuelve el reproductor de <code>@nfl/video</code> (basado en THEOplayer, {{C:src/components/CTVVideo/CTVVideo.tsx:543}}) y le suma analítica y reglas de acceso ({{C:src/utils/video.ts:94}}).</div>
+<div class="piece en"><b>5. The video player.</b> {{C:src/components/CTVVideo/CTVVideo.tsx:91}}. It wraps the <code>@nfl/video</code> player (based on THEOplayer, {{C:src/components/CTVVideo/CTVVideo.tsx:543}}) and adds analytics and access rules ({{C:src/utils/video.ts:94}}).</div>

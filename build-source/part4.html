@@ -1,0 +1,57 @@
+
+<h2 class="es">Cómo funciona CTVWeb - Connected</h2><h2 class="en">How CTVWeb - Connected works</h2>
+
+<ol class="es">
+<li><b>Arranca.</b> <code>index.js</code> carga <code>platformIndex</code>; Metro elige la versión web ({{C:platformIndex.web.js:15}}) o nativa. El build web usa <code>CONNECTED_WEB=true expo export -p web</code>.</li>
+<li><b>Se prepara.</b> La App raíz inicia Sentry y el LogManager ({{C:src/App.tsx:203}}), enciende los flags ({{C:src/App.tsx:193}}) y espera a que estén listos ({{C:src/App.tsx:221}}).</li>
+<li><b>Sabe quién eres.</b> <code>AuthenticationManager</code> ({{C:src/managers/AuthenticationManager/AuthenticationManager.ts:20}}) maneja el login. Los tokens se guardan en almacenamiento cifrado (MMKV) mediante atoms ({{C:src/atoms/authenticationState.ts:10}}).</li>
+<li><b>Muestra pantallas.</b> El navegador abre <code>DynamicScreen</code> ({{C:src/navigators/RootStackNavigator.tsx:250}}), una pantalla cuyo contenido llega de la API en vez de estar fijo.</li>
+<li><b>Pide datos.</b> Un hook de React Query llama a <code>experienceApi</code>, que consigue el token con <code>NFLAPIConfig.getAuthToken()</code> ({{C:src/nflApi/Experience.ts:77}}) y hace la petición con <code>fetchId</code> ({{C:src/nflApi/Experience.ts:78}}). React Query guarda la respuesta en caché.</li>
+<li><b>Guarda el estado.</b> Jotai mantiene el estado compartido (por ejemplo, <code>experienceFetchStatus</code> en {{C:src/atoms/experienceState.ts:8}}).</li>
+<li><b>Se maneja con el control remoto.</b> Las teclas llegan a <code>KeyEventManager</code> ({{C:src/managers/KeyEventManager.ts:18}}); en web, {{C:platformIndex.web.js:13}} hace que el gamepad se comporte como teclado.</li>
+<li><b>Reproduce.</b> Al elegir un video, <code>CTVVideo</code> revisa si el contenido está bloqueado ({{C:src/utils/video.ts:94}}) y renderiza el reproductor, que arma la fuente del stream (ver "El viaje de la URL del video").</li>
+<li><b>Vigila.</b> Los errores van a Sentry ({{C:src/utils/sentry.ts:88}}) por el <code>LogManager</code> ({{C:src/managers/LogManager/LogManager.ts:175}}), y la analítica a Adobe ({{C:src/managers/AdobeTrackingManager/AdobeTrackingManager.ts:12}}).</li>
+</ol>
+<ol class="en">
+<li><b>It starts.</b> <code>index.js</code> loads <code>platformIndex</code>; Metro picks the web ({{C:platformIndex.web.js:15}}) or native version. The web build uses <code>CONNECTED_WEB=true expo export -p web</code>.</li>
+<li><b>It gets ready.</b> The root App starts Sentry and the LogManager ({{C:src/App.tsx:203}}), turns on the flags ({{C:src/App.tsx:193}}) and waits until they are ready ({{C:src/App.tsx:221}}).</li>
+<li><b>It knows who you are.</b> <code>AuthenticationManager</code> ({{C:src/managers/AuthenticationManager/AuthenticationManager.ts:20}}) handles login. Tokens are kept in encrypted storage (MMKV) through atoms ({{C:src/atoms/authenticationState.ts:10}}).</li>
+<li><b>It shows screens.</b> The navigator opens <code>DynamicScreen</code> ({{C:src/navigators/RootStackNavigator.tsx:250}}), a screen whose content comes from the API instead of being fixed.</li>
+<li><b>It asks for data.</b> A React Query hook calls <code>experienceApi</code>, which gets the token with <code>NFLAPIConfig.getAuthToken()</code> ({{C:src/nflApi/Experience.ts:77}}) and makes the request with <code>fetchId</code> ({{C:src/nflApi/Experience.ts:78}}). React Query caches the response.</li>
+<li><b>It keeps state.</b> Jotai holds the shared state (for example, <code>experienceFetchStatus</code> in {{C:src/atoms/experienceState.ts:8}}).</li>
+<li><b>It is driven by the remote.</b> Key presses reach <code>KeyEventManager</code> ({{C:src/managers/KeyEventManager.ts:18}}); on web, {{C:platformIndex.web.js:13}} makes the gamepad behave like a keyboard.</li>
+<li><b>It plays.</b> When a video is chosen, <code>CTVVideo</code> checks whether the content is locked ({{C:src/utils/video.ts:94}}) and renders the player, which builds the stream source (see "The video URL journey").</li>
+<li><b>It watches itself.</b> Errors go to Sentry ({{C:src/utils/sentry.ts:88}}) via the <code>LogManager</code> ({{C:src/managers/LogManager/LogManager.ts:175}}), and analytics go to Adobe ({{C:src/managers/AdobeTrackingManager/AdobeTrackingManager.ts:12}}).</li>
+</ol>
+
+<h2 class="es">El viaje de la URL del video</h2><h2 class="en">The video URL journey</h2>
+<ol class="es">
+<li>Una tarjeta abre la pantalla de video y le pasa una lista (<code>playlist</code>) como parámetro de navegación: {{C:src/navigators/RootStackNavigator.tsx:399}}.</li>
+<li><code>VideoScreen</code> entrega esa lista a <code>CTVVideoWrapper</code> como <code>videos</code>: {{C:src/screens/VideoScreen/VideoScreen.tsx:527}}.</li>
+<li><code>CTVVideo</code> toma el video actual de la lista ({{C:src/components/CTVVideo/CTVVideo.tsx:176}}) y pasa la lista al reproductor ({{C:src/components/CTVVideo/CTVVideo.tsx:622}}).</li>
+<li>El reproductor THEOplayer arma la fuente en <code>getSource</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:1742}}). Ahí se arma <code>sources: [{ src, type, ... }]</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:1849}}). Según el caso usa un conector (MediaKind, THEOlive) o la URL directa. Para DASH, primero descarga el manifiesto y saca la URL real ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:3013}}).</li>
+<li><code>setSource</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:2143}}) llama a <code>getSource</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:3069}}) y se la da al reproductor: <code>this.player.source = source</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:2323}}).</li>
+</ol>
+<ol class="en">
+<li>A card opens the video screen and passes it a list (<code>playlist</code>) as a navigation parameter: {{C:src/navigators/RootStackNavigator.tsx:399}}.</li>
+<li><code>VideoScreen</code> hands that list to <code>CTVVideoWrapper</code> as <code>videos</code>: {{C:src/screens/VideoScreen/VideoScreen.tsx:527}}.</li>
+<li><code>CTVVideo</code> takes the current video from the list ({{C:src/components/CTVVideo/CTVVideo.tsx:176}}) and passes the list to the player ({{C:src/components/CTVVideo/CTVVideo.tsx:622}}).</li>
+<li>The THEOplayer wrapper builds the source in <code>getSource</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:1742}}). It assembles <code>sources: [{ src, type, ... }]</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:1849}}). Depending on the content it uses a connector (MediaKind, THEOlive) or the direct URL. For DASH it first downloads the manifest and extracts the real URL ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:3013}}).</li>
+<li><code>setSource</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:2143}}) calls <code>getSource</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:3069}}) and gives the result to the player: <code>this.player.source = source</code> ({{P:video/src/components/TheoVideoPlayer/TheoVideoPlayer.tsx:2323}}).</li>
+</ol>
+
+<script>
+(function(){
+  var b=document.body,btn=document.getElementById('lang');
+  function set(l){
+    b.setAttribute('data-lang',l);document.documentElement.lang=l;
+    btn.textContent=l==='es'?'English':'Español';
+    try{localStorage.setItem('ctv-lang',l);}catch(e){}
+  }
+  var s=null;try{s=localStorage.getItem('ctv-lang');}catch(e){}
+  if(!s&&navigator.language&&navigator.language.toLowerCase().indexOf('en')===0)s='en';
+  if(s==='en'||s==='es')set(s);
+  btn.addEventListener('click',function(){set(b.getAttribute('data-lang')==='es'?'en':'es');});
+})();
+</script>
+</body></html>

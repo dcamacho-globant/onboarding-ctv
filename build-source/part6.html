@@ -1,0 +1,35 @@
+
+<h2 id="redfast" class="es">Cómo funciona Redfast</h2><h2 id="redfast-en" class="en">How Redfast works</h2>
+
+<p class="es">Redfast muestra mensajes promocionales (por ejemplo, ofertas de suscripción) como banners y ventanas. Se activa con el flag <code>FEATURE_ENABLE_REDFAST</code> ({{C:src/constants/features.ts:70}}). Funciona distinto en web y en nativo.</p>
+<p class="en">Redfast shows promotional messages (for example, subscription offers) as banners and overlays. It is turned on by the <code>FEATURE_ENABLE_REDFAST</code> flag ({{C:src/constants/features.ts:70}}). It works differently on web and on native.</p>
+
+<h3 class="es">En CTV Web</h3><h3 class="en">On CTV Web</h3>
+<ol class="es">
+<li><b>Se carga como un script externo.</b> <code>RedfastProvider</code> envuelve la app ({{C:src/App.web.tsx:383}}). Si el flag está activo, llama a <code>loadRedfastSDK</code> ({{C:src/utils/RedfastProvider.web.tsx:32}}), que guarda el tipo de dispositivo, agrega el <code>&lt;script&gt;</code> del SDK (producción o staging) a la página y le pone el atributo <code>data-rf-device-type</code> ({{C:src/utils/loadSDKs.web.ts:673}}, {{C:src/utils/loadSDKs.web.ts:697}}). Si falla, se registra el error.</li>
+<li><b>El SDK dibuja los mensajes.</b> En web, la interfaz la pinta el propio script de Redfast, no React. Por eso <code>RedfastHost</code> no hace nada en web ({{C:src/components/ModalContent/RedfastHost/RedfastHost.web.tsx:1}}).</li>
+<li><b>Se escucha un evento.</b> Cuando el usuario presiona un botón, Redfast lanza el evento <code>redfast-ctvweb-event</code> ({{C:src/utils/RedfastProvider.web.tsx:13}}). El proveedor busca en <code>window.Redfast</code> la acción de ese botón y lee su <code>rf_settings_deeplink</code> ({{C:src/utils/RedfastProvider.web.tsx:58}}).</li>
+<li><b>Se navega.</b> Ese enlace profundo pasa al manejador de deeplinks de la app ({{C:src/utils/RedfastProvider.web.tsx:65}}), el mismo que usan otras entradas, y lleva al usuario a la pantalla correspondiente.</li>
+</ol>
+<ol class="en">
+<li><b>It loads as an external script.</b> <code>RedfastProvider</code> wraps the app ({{C:src/App.web.tsx:383}}). If the flag is on, it calls <code>loadRedfastSDK</code> ({{C:src/utils/RedfastProvider.web.tsx:32}}), which stores the device type, adds the SDK <code>&lt;script&gt;</code> (production or staging) to the page and sets the <code>data-rf-device-type</code> attribute ({{C:src/utils/loadSDKs.web.ts:673}}, {{C:src/utils/loadSDKs.web.ts:697}}). If it fails, the error is logged.</li>
+<li><b>The SDK draws the messages.</b> On web the Redfast script itself paints the UI, not React. That is why <code>RedfastHost</code> does nothing on web ({{C:src/components/ModalContent/RedfastHost/RedfastHost.web.tsx:1}}).</li>
+<li><b>An event is heard.</b> When the user presses a button, Redfast fires the <code>redfast-ctvweb-event</code> event ({{C:src/utils/RedfastProvider.web.tsx:13}}). The provider looks up that button's action in <code>window.Redfast</code> and reads its <code>rf_settings_deeplink</code> ({{C:src/utils/RedfastProvider.web.tsx:58}}).</li>
+<li><b>The app navigates.</b> That deep link goes to the app's deeplink handler ({{C:src/utils/RedfastProvider.web.tsx:65}}), the same one other entry points use, and takes the user to the matching screen.</li>
+</ol>
+
+<h3 class="es">En nativo (tvOS, Fire TV, Android TV)</h3><h3 class="en">On native (tvOS, Fire TV, Android TV)</h3>
+<ol class="es">
+<li><b>Se usa un SDK de React Native.</b> La app elige el ID de Redfast según el ambiente ({{C:src/App.tsx:307}}) y lo pasa a <code>PromptProvider</code>, junto con el id del dispositivo ({{C:src/App.tsx:324}}). Ese proveedor viene del SDK de Recurly Engage ({{C:src/utils/usePromptShim.ts:1}}); en web se usa una versión vacía ({{C:src/utils/usePromptShim.web.ts:14}}).</li>
+<li><b>Se inicia en el Splash.</b> <code>useRedfastInit</code> ({{C:src/hooks/useRedfastInit.ts:20}}) espera, hasta 10 intentos ({{C:src/hooks/useRedfastInit.ts:18}}), a que el SDK esté listo ({{C:src/hooks/useRedfastInit.ts:47}}) y entonces le asigna las fuentes de la app. Solo corre en nativo, con el flag activo y con el usuario identificado. Se llama desde {{C:src/screens/SplashScreen/SplashScreen.tsx:242}}.</li>
+<li><b>Se identifica al usuario.</b> <code>useRedfastAuth</code> ({{C:src/hooks/useRedfastAuth.ts:9}}) le pasa el UID de Gigya al SDK ({{C:src/hooks/useRedfastAuth.ts:24}}) para que los mensajes sean personalizados.</li>
+<li><b>Se pintan los mensajes.</b> <code>RedfastHost</code> vive dentro del menú lateral ({{C:src/navigators/SideBarNavigator.tsx:199}}) para tener contexto de navegación. Muestra el <code>PromptOverlay</code> ({{C:src/components/ModalContent/RedfastHost/RedfastHost.tsx:38}}) cuando el SDK lo pide. El banner de Home llega como una bandeja de tipo <code>RedfastBanner</code> ({{C:src/utils/useFetchTrays.ts:815}}).</li>
+<li><b>Se reacciona al botón.</b> <code>useRedfast</code> ({{C:src/hooks/useRedfast.ts:40}}) registra la analítica del mensaje ({{C:src/hooks/useRedfast.ts:148}}) y, si el botón trae un enlace, lo envía al manejador de deeplinks ({{C:src/hooks/useRedfast.ts:246}}). Una impresión (el banner solo se ve) no navega.</li>
+</ol>
+<ol class="en">
+<li><b>It uses a React Native SDK.</b> The app picks the Redfast ID by environment ({{C:src/App.tsx:307}}) and passes it to <code>PromptProvider</code> together with the device id ({{C:src/App.tsx:324}}). That provider comes from the Recurly Engage SDK ({{C:src/utils/usePromptShim.ts:1}}); on web an empty stand-in is used ({{C:src/utils/usePromptShim.web.ts:14}}).</li>
+<li><b>It starts on the Splash screen.</b> <code>useRedfastInit</code> ({{C:src/hooks/useRedfastInit.ts:20}}) waits, up to 10 attempts ({{C:src/hooks/useRedfastInit.ts:18}}), for the SDK to be ready ({{C:src/hooks/useRedfastInit.ts:47}}) and then sets the app's fonts on it. It runs only on native, with the flag on and a known user. It is called from {{C:src/screens/SplashScreen/SplashScreen.tsx:242}}.</li>
+<li><b>The user is identified.</b> <code>useRedfastAuth</code> ({{C:src/hooks/useRedfastAuth.ts:9}}) gives the Gigya UID to the SDK ({{C:src/hooks/useRedfastAuth.ts:24}}) so messages can be personalized.</li>
+<li><b>Messages are drawn.</b> <code>RedfastHost</code> lives inside the side menu ({{C:src/navigators/SideBarNavigator.tsx:199}}) to have navigation context. It shows the <code>PromptOverlay</code> ({{C:src/components/ModalContent/RedfastHost/RedfastHost.tsx:38}}) when the SDK asks for it. The Home banner arrives as a <code>RedfastBanner</code> tray ({{C:src/utils/useFetchTrays.ts:815}}).</li>
+<li><b>It reacts to the button.</b> <code>useRedfast</code> ({{C:src/hooks/useRedfast.ts:40}}) records the message analytics ({{C:src/hooks/useRedfast.ts:148}}) and, if the button carries a link, sends it to the deeplink handler ({{C:src/hooks/useRedfast.ts:246}}). An impression (the banner is merely visible) does not navigate.</li>
+</ol>

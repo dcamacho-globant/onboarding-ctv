@@ -1,0 +1,14 @@
+
+<h3 class="es">Después del login: sesión y token</h3><h3 class="en">After login: session and token</h3>
+<ol class="es">
+<li><b>Se guardan los datos.</b> El perfil queda en <code>gigyaDataState</code> y el token en <code>nflTokenState</code>, ambos persistentes ({{C:src/atoms/userState.ts:26}}, {{C:src/atoms/userState.ts:21}}). <code>UserManager.setUserData</code> ({{C:src/managers/UserManager/UserManager.ts:165}}) los escribe y vuelve a registrar el token.</li>
+<li><b>¿Hay sesión?</b> <code>isSignedIn</code> ({{C:src/managers/UserManager/UserManager.ts:123}}) es cierto si hay un UID y no hay código de error.</li>
+<li><b>Un solo lugar entrega el token.</b> <code>registerToken</code> ({{C:src/managers/UserManager/UserManager.ts:352}}) deja a <code>NFLAPIConfig</code> una función <code>getAuthToken</code> ({{C:src/managers/UserManager/UserManager.ts:363}}). Si el token está vencido o hay un refresco forzado, pide uno nuevo ({{C:src/managers/UserManager/UserManager.ts:514}}, definido en {{P:apps/shared/src/utils/getRefreshableNFLToken.ts:442}}); si no, entrega el guardado. Por eso toda llamada a la API ({{C:src/nflApi/Experience.ts:77}}) lleva un token vigente.</li>
+<li><b>Cerrar sesión.</b> <code>clearLoginCredentials</code> ({{C:src/managers/UserManager/UserManager.ts:384}}) borra los datos de cada proveedor, y <code>clearGigya</code> ({{C:src/managers/UserManager/UserManager.ts:251}}) vacía el perfil, el token y los datos de OIDC, y registra un token nuevo.</li>
+</ol>
+<ol class="en">
+<li><b>The data is stored.</b> The profile goes in <code>gigyaDataState</code> and the token in <code>nflTokenState</code>, both persistent ({{C:src/atoms/userState.ts:26}}, {{C:src/atoms/userState.ts:21}}). <code>UserManager.setUserData</code> ({{C:src/managers/UserManager/UserManager.ts:165}}) writes them and registers the token again.</li>
+<li><b>Is there a session?</b> <code>isSignedIn</code> ({{C:src/managers/UserManager/UserManager.ts:123}}) is true when there is a UID and no error code.</li>
+<li><b>One place hands out the token.</b> <code>registerToken</code> ({{C:src/managers/UserManager/UserManager.ts:352}}) gives <code>NFLAPIConfig</code> a <code>getAuthToken</code> function ({{C:src/managers/UserManager/UserManager.ts:363}}). If the token is expired or a refresh is forced, it requests a new one ({{C:src/managers/UserManager/UserManager.ts:514}}, defined in {{P:apps/shared/src/utils/getRefreshableNFLToken.ts:442}}); otherwise it returns the stored one. That is why every API call ({{C:src/nflApi/Experience.ts:77}}) carries a valid token.</li>
+<li><b>Signing out.</b> <code>clearLoginCredentials</code> ({{C:src/managers/UserManager/UserManager.ts:384}}) clears each provider's data, and <code>clearGigya</code> ({{C:src/managers/UserManager/UserManager.ts:251}}) empties the profile, the token and the OIDC data, and registers a fresh token.</li>
+</ol>

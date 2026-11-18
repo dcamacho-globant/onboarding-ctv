@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>CTV Web — Connected</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f6fa;color:#1b2430}
+main{background:#fff;border:1px solid #d5dbe3;border-radius:10px;padding:28px 32px;width:min(420px,92vw)}
+h1{font-size:1.25em;margin:0 0 6px}p{margin:6px 0 16px}
+input{width:100%;box-sizing:border-box;padding:10px;font-size:1em;border:1px solid #9aa6b5;border-radius:6px}
+button.go{margin-top:12px;width:100%;padding:10px;font-size:1em;border:0;border-radius:6px;background:#2f6fed;color:#fff;cursor:pointer}
+button.go:disabled{opacity:.6;cursor:wait}
+#err{color:#b02a37;margin-top:12px;min-height:1.2em}
+#lang{position:fixed;top:14px;right:14px;border:1px solid #2f6fed;background:#fff;color:#2f6fed;border-radius:20px;padding:6px 14px;cursor:pointer}
+body[data-lang="es"] .en{display:none}
+body[data-lang="en"] .es{display:none}
+</style></head>
+<body data-lang="es">
+<button id="lang" type="button" aria-label="Switch language / Cambiar idioma">English</button>
+<main>
+<h1><span class="es">Contenido protegido</span><span class="en">Protected content</span></h1>
+<p class="es">Escribe la contraseña para ver la documentación de CTV Web — Connected.</p>
+<p class="en">Enter the password to view the CTV Web — Connected documentation.</p>
+<form id="f" autocomplete="off">
+<input id="pw" type="password" required autofocus
+  aria-label="Contraseña / Password" placeholder="••••••••">
+<button class="go" id="go" type="submit"><span class="es">Entrar</span><span class="en">Enter</span></button>
+</form>
+<div id="err" role="alert" aria-live="polite"></div>
+</main>
+<script>
+(function(){
+  var PAYLOAD="__PAYLOAD__";
+  var MARK="<!--ctv-ok-->";
+  var ITER=600000;
+  var b=document.body,btn=document.getElementById('lang'),
+      form=document.getElementById('f'),pw=document.getElementById('pw'),
+      go=document.getElementById('go'),err=document.getElementById('err');
+  var MSG={
+    es:{bad:'Contraseña incorrecta.',nobuild:'Esta página aún no se ha construido con la contraseña (ONBOARDING_PASSWORD).',nocrypto:'Este navegador no permite descifrar el contenido. Usa una versión reciente y abre la página por https.'},
+    en:{bad:'Incorrect password.',nobuild:'This page has not been built with the password yet (ONBOARDING_PASSWORD).',nocrypto:'This browser cannot decrypt the content. Use a recent version and open the page over https.'}
+  };
+  var lastKey=null;
+  function lang(){return b.getAttribute('data-lang');}
+  function show(k){lastKey=k;err.textContent=k?MSG[lang()][k]:'';}
+  function setLang(l){
+    b.setAttribute('data-lang',l);document.documentElement.lang=l;
+    btn.textContent=l==='es'?'English':'Español';
+    try{localStorage.setItem('ctv-lang',l);}catch(e){}
+    show(lastKey);
+  }
+  var s=null;try{s=localStorage.getItem('ctv-lang');}catch(e){}
+  if(!s&&navigator.language&&navigator.language.toLowerCase().indexOf('en')===0)s='en';
+  if(s==='en'||s==='es')setLang(s);
+  btn.addEventListener('click',function(){setLang(lang()==='es'?'en':'es');});
+
+  async function decrypt(password){
+    var raw=Uint8Array.from(atob(PAYLOAD),function(c){return c.charCodeAt(0);});
+    var salt=raw.slice(8,16),data=raw.slice(16);
+    var km=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+    var bits=new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt:salt,iterations:ITER,hash:'SHA-256'},km,384));
+    var key=await crypto.subtle.importKey('raw',bits.slice(0,32),'AES-CBC',false,['decrypt']);
+    var pt=await crypto.subtle.decrypt({name:'AES-CBC',iv:bits.slice(32,48)},key,data);
+    var text=new TextDecoder().decode(pt);
+    if(text.indexOf(MARK)!==0)throw new Error('bad');
+    return text.slice(MARK.length);
+  }
+
+  if(PAYLOAD.indexOf('__')===0){show('nobuild');go.disabled=true;}
+  form.addEventListener('submit',async function(ev){
+    ev.preventDefault();
+    if(PAYLOAD.indexOf('__')===0)return;
+    if(!(window.crypto&&crypto.subtle)){show('nocrypto');return;}
+    show(null);go.disabled=true;
+    try{
+      var html=await decrypt(pw.value);
+      document.open();document.write(html);document.close();
+    }catch(e){
+      pw.value='';show('bad');go.disabled=false;pw.focus();
+    }
+  });
+})();
+</script>
+</body></html>

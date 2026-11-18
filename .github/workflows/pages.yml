@@ -1,0 +1,39 @@
+name: Deploy docs to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# deploy workflow: a half-finished publish must not be cancelled by a newer run
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Encrypts the docs with the ONBOARDING_PASSWORD repository secret.
+      # The password is never written to a file or to the command line.
+      - name: Build encrypted page
+        env:
+          ONBOARDING_PASSWORD: ${{ secrets.ONBOARDING_PASSWORD }}
+        run: bash build-source/build.sh
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
